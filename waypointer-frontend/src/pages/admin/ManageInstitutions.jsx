@@ -14,29 +14,37 @@ export default function ManageInstitutions() {
   useEffect(() => { load(); }, []);
 
   const save = async (e) => {
-    e.preventDefault();
-    setSaving(true);
-    setMsg('');
-    // Измени блок в try:
-    try {
-      const payload = { ...form, points };
-      
-      if (isEdit) {
-        // Используем POST + _method: 'PUT'
-        await api.post(`/routes/${id}`, { 
-          ...payload, 
-          _method: 'PUT' 
-        });
-      } else {
-        await api.post('/routes', payload);
-      }
-      navigate('/my-routes');
-    } catch (err) {
-      setMsg(err.response?.data?.message || 'Error saving institution');
-    } finally {
-      setSaving(false);
+  e.preventDefault();
+  setSaving(true);
+  setMsg('');
+  
+  try {
+    // 1. Берем только данные из формы заведения
+    const payload = { ...form }; 
+
+    if (editing) {
+      // 2. Обновляем заведение по ID (editing хранит ID заведения)
+      await api.post(`/institutions/${editing}`, { 
+        ...payload, 
+        _method: 'PUT' 
+      });
+      setMsg('Institution updated!');
+    } else {
+      // 3. Создаем новое заведение
+      await api.post('/institutions', payload);
+      setMsg('Institution created!');
     }
-  };
+
+    setForm(empty);
+    setEditing(null);
+    load(); // Перезагружаем список
+  } catch (err) {
+    console.error("Error details:", err.response?.data);
+    setMsg(err.response?.data?.message || 'Error saving institution');
+  } finally {
+    setSaving(false);
+  }
+};
 
   const del = async (id) => {
     if (!confirm('Delete this institution?')) return;
