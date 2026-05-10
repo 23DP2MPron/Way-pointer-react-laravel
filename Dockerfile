@@ -44,6 +44,12 @@ CMD ["bash", "-c", \
      find /etc/apache2 -name 'mpm_*.conf' -delete && \
      echo 'LoadModule mpm_prefork_module /usr/lib/apache2/modules/mod_mpm_prefork.so' \
          > /etc/apache2/mods-enabled/mpm_prefork.load && \
+     echo '=== PHP test ===' && \
+     php -r 'echo \"PHP works\";' && \
+     echo '=== index.php exists ===' && \
+     ls -la /var/www/html/public/index.php && \
+     echo '=== Apache mods ===' && \
+     ls /etc/apache2/mods-enabled/ && \
      chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
      php artisan config:cache 2>&1 && \
      php artisan migrate --force 2>&1 && \
