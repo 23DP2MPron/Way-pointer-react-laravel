@@ -17,11 +17,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
-COPY .env.production .env
-
 RUN composer install --no-dev --optimize-autoloader
-
-RUN php artisan key:generate --force
 
 RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 775 storage bootstrap/cache
