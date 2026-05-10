@@ -1,32 +1,17 @@
-# Frontend Dockerfile for React
-FROM node:20-alpine as build
+FROM php:8.2-cli-alpine
 
-# Set working directory
-WORKDIR /app
+# Устанавливаем нужные расширения
+RUN apk add --no-cache libpng-dev libxml2-dev libzip-dev oniguruma-dev zip unzip git curl
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
-# Copy package files
-COPY package*.json ./
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install dependencies
-RUN npm ci
-
-# Copy all files
+WORKDIR /var/www/html
 COPY . .
 
-# Build the app
-RUN npm run build
+# Установка зависимостей Laravel
+RUN composer install --no-dev --optimize-autoloader
+RUN chown -R www-data:www-data storage bootstrap/cache
 
-# Production stage with nginx
-FROM nginx:alpine
-
-# Copy built files from build stage
-COPY --from=build /app/dist /usr/share/nginx/html
-
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-# Expose port 8080 for Google Cloud Run
-EXPOSE 8080
-
-# Start nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Запуск. Флаг -t public говорит PHP искать index.php/index.html в папке public
+CMD sh -c "php -S 0.0.0.0:$PORT -t public"
