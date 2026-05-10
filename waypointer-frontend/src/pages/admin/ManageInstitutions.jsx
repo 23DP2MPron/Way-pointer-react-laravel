@@ -31,15 +31,19 @@ export default function ManageInstitutions() {
     setSaving(true);
     setMsg('');
     try {
-      // Подготовка данных (превращаем пустые координаты в null для Laravel)
+      // ПЕРЕИМЕНОВЫВАЕМ category в type для бэкенда
       const payload = {
-        ...form,
+        name: form.name,
+        description: form.description,
+        type: form.category, // Бэкенд хочет 'type'
+        address: form.address || 'Not specified', // Если пусто, шлем заглушку, т.к. бэкенд требует его
+        city: form.city,
+        country: form.country,
         latitude: form.latitude === '' ? null : form.latitude,
         longitude: form.longitude === '' ? null : form.longitude
       };
 
       if (editing) {
-        // Используем POST + _method: PUT для максимальной совместимости с Laravel
         await api.post(`/institutions/${editing}`, { ...payload, _method: 'PUT' });
         setMsg('Institution updated!');
       } else {
@@ -51,9 +55,9 @@ export default function ManageInstitutions() {
       setEditing(null);
       load();
     } catch (err) {
-      // Выводим детальную ошибку, если она есть
       const serverError = err.response?.data?.errors;
       if (serverError) {
+        // Выводим все ошибки через запятую
         setMsg('Error: ' + Object.values(serverError).flat().join(', '));
       } else {
         setMsg(err.response?.data?.message || 'Error saving institution');
