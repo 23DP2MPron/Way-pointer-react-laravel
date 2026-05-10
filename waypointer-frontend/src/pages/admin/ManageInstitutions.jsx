@@ -1,10 +1,9 @@
-import { useEffect, useState, useNavigate } from 'react';
+import { useEffect, useState} from 'react';
 import api from '../../api/axios';
 
 const empty = { name: '', description: '', category: 'museum', address: '', city: '', country: '', latitude: '', longitude: '' };
 
 export default function ManageInstitutions() {
-  const navigate = useNavigate();
   const [institutions, setInstitutions] = useState([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
