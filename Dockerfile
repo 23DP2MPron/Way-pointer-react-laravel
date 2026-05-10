@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Cache bust: 2026-05-10-v6
+# Cache bust: 2026-05-10-v7
 RUN apt-get update && apt-get install -y \
     git curl libpng-dev libonig-dev libxml2-dev zip unzip && \
     rm -rf /var/lib/apt/lists/*
@@ -19,26 +19,12 @@ RUN chown -R www-data:www-data /var/www/html && \
 
 RUN a2enmod rewrite
 
-RUN echo '<VirtualHost *:8080>\n\
-    DocumentRoot /var/www/html/public\n\
-    DirectoryIndex index.php index.html\n\
-    <Directory /var/www/html/public>\n\
-        Options Indexes FollowSymLinks\n\
-        AllowOverride All\n\
-        Require all granted\n\
-    </Directory>\n\
-    <FilesMatch \.php$>\n\
-        SetHandler application/x-httpd-php\n\
-    </FilesMatch>\n\
-    ErrorLog ${APACHE_LOG_DIR}/error.log\n\
-    CustomLog ${APACHE_LOG_DIR}/access.log combined\n\
-</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
+# Полностью заменяем apache2.conf
+RUN echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 
-RUN echo 'Listen 8080' > /etc/apache2/ports.conf && \
-    echo 'ServerName localhost' >> /etc/apache2/apache2.conf
+COPY apache.conf /etc/apache2/sites-available/000-default.conf
 
-RUN a2ensite 000-default && \
-    a2dissite default-ssl 2>/dev/null || true
+RUN echo 'Listen 8080' > /etc/apache2/ports.conf
 
 RUN echo '<?php echo "PHP WORKS";' > /var/www/html/public/test.php
 
