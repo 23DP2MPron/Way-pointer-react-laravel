@@ -4,7 +4,7 @@ import api from '../../api/axios';
 const empty = { 
   name: '', 
   description: '', 
-  category: 'museum', // В institutions используем category вместо type
+  category: 'landmark', // Установим значение по умолчанию, которое точно валидно
   address: '', 
   city: '', 
   country: '', 
@@ -19,7 +19,6 @@ export default function ManageInstitutions() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Загрузка данных
   const load = () => api.get('/institutions?per_page=50')
     .then(r => setInstitutions(r.data.data || []))
     .catch(() => setInstitutions([]));
@@ -31,24 +30,24 @@ export default function ManageInstitutions() {
     setSaving(true);
     setMsg('');
     try {
-      // ПЕРЕИМЕНОВЫВАЕМ category в type для бэкенда
+      // Формируем payload так, чтобы Laravel был доволен
       const payload = {
         name: form.name,
         description: form.description,
-        type: form.category, // Бэкенд хочет 'type'
-        address: form.address || 'Not specified', // Если пусто, шлем заглушку, т.к. бэкенд требует его
+        type: form.category, // Отправляем как 'type'
+        address: form.address || 'Address not specified', // Бэкенд требует адрес
         city: form.city,
         country: form.country,
-        latitude: form.latitude === '' ? null : form.latitude,
-        longitude: form.longitude === '' ? null : form.longitude
+        latitude: form.latitude === '' ? null : parseFloat(form.latitude),
+        longitude: form.longitude === '' ? null : parseFloat(form.longitude)
       };
 
       if (editing) {
         await api.post(`/institutions/${editing}`, { ...payload, _method: 'PUT' });
-        setMsg('Institution updated!');
+        setMsg('Updated successfully!');
       } else {
         await api.post('/institutions', payload);
-        setMsg('Institution added!');
+        setMsg('Added successfully!');
       }
       
       setForm(empty);
@@ -57,10 +56,10 @@ export default function ManageInstitutions() {
     } catch (err) {
       const serverError = err.response?.data?.errors;
       if (serverError) {
-        // Выводим все ошибки через запятую
+        // Показываем конкретную причину (например: "The selected type is invalid")
         setMsg('Error: ' + Object.values(serverError).flat().join(', '));
       } else {
-        setMsg(err.response?.data?.message || 'Error saving institution');
+        setMsg(err.response?.data?.message || 'Error saving data');
       }
     } finally {
       setSaving(false);
@@ -68,7 +67,7 @@ export default function ManageInstitutions() {
   };
 
   const del = async (id) => {
-    if (!confirm('Delete this institution?')) return;
+    if (!confirm('Delete?')) return;
     await api.delete(`/institutions/${id}`);
     load();
   };
@@ -78,7 +77,7 @@ export default function ManageInstitutions() {
     setForm({ 
       name: i.name, 
       description: i.description || '', 
-      category: i.category, 
+      category: i.type || i.category || 'landmark', // Поддержка обоих имен полей
       address: i.address || '', 
       city: i.city, 
       country: i.country, 
@@ -93,7 +92,7 @@ export default function ManageInstitutions() {
       <h1 className="text-3xl font-display font-bold mb-8">Manage Institutions</h1>
 
       <div className="card p-6 mb-8">
-        <h2 className="font-display font-semibold mb-4">{editing ? 'Edit Institution' : 'Add New Institution'}</h2>
+        <h2 className="font-display font-semibold mb-4">{editing ? 'Edit' : 'Add New'}</h2>
         {msg && <p className={`text-sm mb-3 ${msg.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{msg}</p>}
         
         <form onSubmit={save} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -102,14 +101,15 @@ export default function ManageInstitutions() {
             <input required className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
           </div>
           <div>
-            <label className="text-sm font-medium mb-1 block">Category *</label>
+            <label className="text-sm font-medium mb-1 block">Category (Type) *</label>
             <select required className="input" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+              {/* Используем те же типы, что в рабочем коде мест */}
+              <option value="landmark">Landmark</option>
+              <option value="historic">Historic</option>
+              <option value="park">Park</option>
               <option value="museum">Museum</option>
               <option value="hotel">Hotel</option>
               <option value="restaurant">Restaurant</option>
-              <option value="cafe">Cafe</option>
-              <option value="bar">Bar</option>
-              <option value="shop">Shop</option>
             </select>
           </div>
           <div>
@@ -121,46 +121,35 @@ export default function ManageInstitutions() {
             <input required className="input" value={form.country} onChange={e => setForm({ ...form, country: e.target.value })} />
           </div>
           <div className="sm:col-span-2">
-            <label className="text-sm font-medium mb-1 block">Address</label>
-            <input className="input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Latitude</label>
-            <input type="number" step="any" className="input" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-1 block">Longitude</label>
-            <input type="number" step="any" className="input" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
+            <label className="text-sm font-medium mb-1 block">Address *</label>
+            <input required className="input" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} placeholder="Required by server" />
           </div>
           <div className="sm:col-span-2">
             <label className="text-sm font-medium mb-1 block">Description</label>
-            <textarea className="input resize-none" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
+            <textarea className="input resize-none" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
           
           <div className="sm:col-span-2 flex gap-2">
             <button type="submit" disabled={saving} className="btn-primary">
-              {saving ? 'Saving...' : editing ? 'Update Institution' : 'Add Institution'}
+              {saving ? 'Saving...' : editing ? 'Update' : 'Add Institution'}
             </button>
             {editing && (
-              <button type="button" onClick={() => { setEditing(null); setForm(empty); }} className="btn-secondary">
-                Cancel
-              </button>
+              <button type="button" onClick={() => { setEditing(null); setForm(empty); }} className="btn-secondary">Cancel</button>
             )}
           </div>
         </form>
       </div>
 
       <div className="flex flex-col gap-3">
-        {institutions.length === 0 && <p className="text-gray-500 text-center py-8">No institutions yet.</p>}
         {institutions.map(i => (
           <div key={i.id} className="card p-4 flex items-center justify-between gap-4">
             <div>
               <p className="font-semibold">{i.name}</p>
-              <p className="text-sm text-gray-500">{i.city}, {i.country} · {i.category} · ⭐ {i.rating?.toFixed(1)}</p>
+              <p className="text-sm text-gray-500">{i.city}, {i.country} · {i.type || i.category}</p>
             </div>
-            <div className="flex gap-2 shrink-0">
-              <button onClick={() => startEdit(i)} className="btn-secondary text-xs px-3 py-1.5">Edit</button>
-              <button onClick={() => del(i.id)} className="text-xs px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-600 hover:bg-red-100 transition-colors">Delete</button>
+            <div className="flex gap-2">
+              <button onClick={() => startEdit(i)} className="btn-secondary text-xs px-3">Edit</button>
+              <button onClick={() => del(i.id)} className="btn-secondary text-xs px-3 text-red-500">Delete</button>
             </div>
           </div>
         ))}
