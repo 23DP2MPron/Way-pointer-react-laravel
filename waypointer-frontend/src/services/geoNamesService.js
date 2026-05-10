@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const USERNAME = import.meta.env.VITE_GEONAMES_USERNAME || 'demo';
-const BASE_URL = 'http://api.geonames.org';
+const BASE_URL = 'https://secure.geonames.org';
 
 console.log('GeoNames USERNAME:', USERNAME);
 
