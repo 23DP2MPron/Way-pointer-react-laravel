@@ -17,7 +17,7 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 775 storage bootstrap/cache
 
-RUN a2enmod rewrite php8.2
+RUN a2enmod rewrite
 
 RUN echo '<VirtualHost *:8080>\n\
     DocumentRoot /var/www/html/public\n\
