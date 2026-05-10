@@ -1,50 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useNavigate } from 'react';
 import api from '../../api/axios';
 
 const empty = { name: '', description: '', category: 'museum', address: '', city: '', country: '', latitude: '', longitude: '' };
 
 export default function ManageInstitutions() {
+  const navigate = useNavigate();
   const [institutions, setInstitutions] = useState([]);
   const [form, setForm] = useState(empty);
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const load = () => api.get('/institutions?per_page=50').then(r => setInstitutions(r.data.data || []));
+  const isEdit = editing !== null;
+
+  const load = () => api.get('/institutions?per_page=50').then(r => setInstitutions(r.data.data || [])).catch(() => setInstitutions([]));
   useEffect(() => { load(); }, []);
 
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
-
+    
     try {
-      // Отправляем только данные формы заведения
-      const payload = { ...form };
+      // Очищаем данные: если координаты пустые, шлем null вместо ""
+      const payload = { 
+        ...form,
+        latitude: form.latitude === '' ? null : form.latitude,
+        longitude: form.longitude === '' ? null : form.longitude
+      };
 
-      if (editing) {
-        // Если мы редактируем (editing хранит ID заведения)
+      if (isEdit) {
+        // Используем POST + _method: PUT (самый надежный способ для Laravel)
         await api.post(`/institutions/${editing}`, { 
           ...payload, 
           _method: 'PUT' 
         });
-        setMsg('Institution updated successfully!');
+        setMsg('Institution updated!');
       } else {
-        // Если мы создаем новое
+        // Обычный POST для создания
         await api.post('/institutions', payload);
-        setMsg('Institution added successfully!');
+        setMsg('Institution added!');
       }
 
-      // Очистка после успеха
       setForm(empty);
       setEditing(null);
-      load(); // Обновить список внизу
+      load();
     } catch (err) {
-      // Выводим в консоль, чтобы ты мог увидеть детали, если бэкенд не примет данные
-      console.error("Ошибка валидации:", err.response?.data?.errors);
+      // Выводим ошибки в консоль, чтобы точно видеть, на что ругается Laravel
+      console.error("Server Validation Errors:", err.response?.data?.errors);
       
-      const serverMsg = err.response?.data?.message;
-      setMsg(serverMsg ? `Error: ${serverMsg}` : 'Error saving institution');
+      const errorMsg = err.response?.data?.message || 'Error saving institution';
+      setMsg(errorMsg);
     } finally {
       setSaving(false);
     }
