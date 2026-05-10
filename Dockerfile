@@ -17,34 +17,36 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
+COPY .env.production .env
+
 RUN composer install --no-dev --optimize-autoloader
 
-RUN chown -R www-data:www-data storage bootstrap/cache && \
+RUN php artisan key:generate --force
+
+RUN chown -R www-data:www-data /var/www/html && \
     chmod -R 775 storage bootstrap/cache
 
-# Настройка Apache
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf && \
     a2enmod rewrite
 
-# Настройка порта
 RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf && \
     sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' \
         /etc/apache2/sites-available/000-default.conf
 
-# Настройка DocumentRoot
 RUN sed -i 's|/var/www/html|/var/www/html/public|g' \
     /etc/apache2/sites-available/000-default.conf
 
-# Разрешаем .htaccess для Laravel
 RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' \
     /etc/apache2/apache2.conf
 
 EXPOSE 8080
 
-# MPM фикс в runtime — самый надёжный способ
 CMD ["bash", "-c", \
     "find /etc/apache2 -name 'mpm_*.load' -delete && \
      find /etc/apache2 -name 'mpm_*.conf' -delete && \
      echo 'LoadModule mpm_prefork_module /usr/lib/apache2/modules/mod_mpm_prefork.so' \
          > /etc/apache2/mods-enabled/mpm_prefork.load && \
+     php artisan config:cache && \
+     php artisan route:cache && \
+     php artisan migrate --force && \
      apache2-foreground"]
