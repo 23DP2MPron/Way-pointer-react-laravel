@@ -14,37 +14,41 @@ export default function ManageInstitutions() {
   useEffect(() => { load(); }, []);
 
   const save = async (e) => {
-  e.preventDefault();
-  setSaving(true);
-  setMsg('');
-  
-  try {
-    // 1. Берем только данные из формы заведения
-    const payload = { ...form }; 
+    e.preventDefault();
+    setSaving(true);
+    setMsg('');
 
-    if (editing) {
-      // 2. Обновляем заведение по ID (editing хранит ID заведения)
-      await api.post(`/institutions/${editing}`, { 
-        ...payload, 
-        _method: 'PUT' 
-      });
-      setMsg('Institution updated!');
-    } else {
-      // 3. Создаем новое заведение
-      await api.post('/institutions', payload);
-      setMsg('Institution created!');
+    try {
+      // Отправляем только данные формы заведения
+      const payload = { ...form };
+
+      if (editing) {
+        // Если мы редактируем (editing хранит ID заведения)
+        await api.post(`/institutions/${editing}`, { 
+          ...payload, 
+          _method: 'PUT' 
+        });
+        setMsg('Institution updated successfully!');
+      } else {
+        // Если мы создаем новое
+        await api.post('/institutions', payload);
+        setMsg('Institution added successfully!');
+      }
+
+      // Очистка после успеха
+      setForm(empty);
+      setEditing(null);
+      load(); // Обновить список внизу
+    } catch (err) {
+      // Выводим в консоль, чтобы ты мог увидеть детали, если бэкенд не примет данные
+      console.error("Ошибка валидации:", err.response?.data?.errors);
+      
+      const serverMsg = err.response?.data?.message;
+      setMsg(serverMsg ? `Error: ${serverMsg}` : 'Error saving institution');
+    } finally {
+      setSaving(false);
     }
-
-    setForm(empty);
-    setEditing(null);
-    load(); // Перезагружаем список
-  } catch (err) {
-    console.error("Error details:", err.response?.data);
-    setMsg(err.response?.data?.message || 'Error saving institution');
-  } finally {
-    setSaving(false);
-  }
-};
+  };
 
   const del = async (id) => {
     if (!confirm('Delete this institution?')) return;
