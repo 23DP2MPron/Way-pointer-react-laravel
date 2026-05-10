@@ -17,17 +17,20 @@ export default function ManageInstitutions() {
     e.preventDefault();
     setSaving(true);
     setMsg('');
+    // Измени блок в try:
     try {
-      if (editing) {
-        await api.put(`/institutions/${editing}`, form);
-        setMsg('Institution updated!');
+      const payload = { ...form, points };
+      
+      if (isEdit) {
+        // Используем POST + _method: 'PUT'
+        await api.post(`/routes/${id}`, { 
+          ...payload, 
+          _method: 'PUT' 
+        });
       } else {
-        await api.post('/institutions', form);
-        setMsg('Institution added!');
+        await api.post('/routes', payload);
       }
-      setForm(empty);
-      setEditing(null);
-      load();
+      navigate('/my-routes');
     } catch (err) {
       setMsg(err.response?.data?.message || 'Error saving institution');
     } finally {

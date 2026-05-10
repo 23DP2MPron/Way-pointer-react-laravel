@@ -33,8 +33,7 @@ class RouteController extends Controller
         }
 
         // Исправленная сортировка: сначала по рейтингу, потом самые новые
-        $query->orderByRaw('reviews_avg_rating DESC NULLS LAST') 
-              ->latest();
+        $query->orderByDesc('created_at');
 
         // Берем per_page из запроса (на главной это 3, в поиске 12)
         $perPage = $request->get('per_page', 12);
