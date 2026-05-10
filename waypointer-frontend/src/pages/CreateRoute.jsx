@@ -200,47 +200,58 @@ export default function CreateRoute() {
   const updateNote = (index, notes) => setPoints(points.map((p, i) => i === index ? { ...p, notes } : p));
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError('');
-  setSaving(true);
-  
-  try {
-    // Отправляем чистый JSON — так бэкенд правильно получит
-    // массив points и boolean is_published
-    // Отправляем только точки с валидными target_type и target_id
-    // (привлечения из OpenTripMap не сохраняются — они только для UI)
-    const validPoints = points.filter(p => p.target_id != null);
-
-    // duration_days: пустая строка → null, иначе число
-    const durationDays = form.duration_days
-      ? parseInt(form.duration_days, 10)
-      : null;
-
-    const payload = {
-      ...form,
-      duration_days: durationDays,
-      points: validPoints.map(p => ({
-        target_type: p.target_type,
-        target_id: p.target_id,
-        notes: p.notes || null,
-      })),
-    };
-
-    if (isEdit) {
-      await api.put(`/routes/${id}`, payload);
-    } else {
-      await api.post('/routes', payload);
-    }
+    e.preventDefault();
+    setError('');
+    setSaving(true);
     
-    navigate('/my-routes');
-  } catch (err) {
-    // ВАЖНО: Выведи ошибки в консоль, чтобы увидеть, на какое поле ругается бэкенд
-    console.error("Validation errors:", err.response?.data?.errors);
-    setError(err.response?.data?.message || t('routes.failedToSave'));
-  } finally {
-    setSaving(false);
-  }
-};
+    try {
+      // 1. Фильтруем только те точки, которые есть в нашей базе (ID не null)
+      const validPoints = points
+        .filter(p => p.target_id !== null && p.target_id !== undefined)
+        .map((p, index) => ({
+          target_type: p.target_type, // 'place' или 'institution'
+          target_id: parseInt(p.target_id, 10),
+          notes: p.notes || "", // Отправляем пустую строку вместо null, если заметок нет
+          order_index: index // Добавляем индекс для порядка
+        }));
+
+      // 2. Формируем чистый объект для отправки
+      const payload = {
+        title: form.title,
+        description: form.description || "",
+        country: form.country || "",
+        city: form.city || "",
+        duration_days: form.duration_days ? parseInt(form.duration_days, 10) : null,
+        is_published: !!form.is_published, // Гарантируем true/false
+        points: validPoints, // Массив объектов
+      };
+
+      console.log("Sending payload:", payload); // Для отладки в консоли
+
+      if (isEdit) {
+        // Используем PUT для обновления
+        await api.put(`/routes/${id}`, payload);
+      } else {
+        // Используем POST для создания
+        await api.post('/routes', payload);
+      }
+      
+      navigate('/my-routes');
+    } catch (err) {
+      console.error("Full server error:", err.response?.data);
+      const serverErrors = err.response?.data?.errors;
+      
+      if (serverErrors) {
+        // Склеиваем все ошибки валидации в одну строку
+        const msg = Object.values(serverErrors).flat().join(', ');
+        setError(msg);
+      } else {
+        setError(err.response?.data?.message || t('routes.failedToSave'));
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
