@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Cache bust: 2026-05-10-v5
+# Cache bust: 2026-05-10-v6
 RUN apt-get update && apt-get install -y \
     git curl libpng-dev libonig-dev libxml2-dev zip unzip && \
     rm -rf /var/lib/apt/lists/*
@@ -37,8 +37,10 @@ RUN echo '<VirtualHost *:8080>\n\
 RUN echo 'Listen 8080' > /etc/apache2/ports.conf && \
     echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 
-RUN echo '<?php echo "PHP WORKS - Laravel index: " . (file_exists("/var/www/html/public/index.php") ? "YES" : "NO");' \
-    > /var/www/html/public/test.php
+RUN a2ensite 000-default && \
+    a2dissite default-ssl 2>/dev/null || true
+
+RUN echo '<?php echo "PHP WORKS";' > /var/www/html/public/test.php
 
 EXPOSE 8080
 
@@ -47,12 +49,6 @@ CMD ["bash", "-c", \
      find /etc/apache2 -name 'mpm_*.conf' -delete && \
      echo 'LoadModule mpm_prefork_module /usr/lib/apache2/modules/mod_mpm_prefork.so' \
          > /etc/apache2/mods-enabled/mpm_prefork.load && \
-     echo '=== PHP test ===' && \
-     php -r 'echo \"PHP works\";' && \
-     echo '=== index.php exists ===' && \
-     ls -la /var/www/html/public/index.php && \
-     echo '=== Apache mods ===' && \
-     ls /etc/apache2/mods-enabled/ && \
      chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache && \
      php artisan config:cache 2>&1 && \
      php artisan migrate --force 2>&1 && \
