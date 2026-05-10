@@ -37,6 +37,9 @@ RUN echo '<VirtualHost *:8080>\n\
 RUN echo 'Listen 8080' > /etc/apache2/ports.conf && \
     echo 'ServerName localhost' >> /etc/apache2/apache2.conf
 
+RUN echo '<?php echo "PHP WORKS - Laravel index: " . (file_exists("/var/www/html/public/index.php") ? "YES" : "NO");' \
+    > /var/www/html/public/test.php
+
 EXPOSE 8080
 
 CMD ["bash", "-c", \
