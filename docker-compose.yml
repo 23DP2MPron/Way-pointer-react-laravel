@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  # Backend (Laravel)
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8080"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=waypointer
+      - DB_USERNAME=waypointer
+      - DB_PASSWORD=secret
+    depends_on:
+      - db
+    volumes:
+      - ./storage:/var/www/storage
+    networks:
+      - waypointer-network
+
+  # Frontend (React)
+  frontend:
+    build:
+      context: ./waypointer-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:8080"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    networks:
+      - waypointer-network
+
+  # Database (MySQL)
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_DATABASE=waypointer
+      - MYSQL_USER=waypointer
+      - MYSQL_PASSWORD=secret
+      - MYSQL_ROOT_PASSWORD=rootsecret
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - waypointer-network
+
+volumes:
+  db-data:
+
+networks:
+  waypointer-network:
+    driver: bridge
