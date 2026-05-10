@@ -31,4 +31,3 @@ RUN echo '<?php echo "PHP WORKS";' > /var/www/html/public/test.php
 EXPOSE 8080
 
 CMD ["php", "-S", "0.0.0.0:8080", "-t", "/var/www/html/public"]
-CMD sh -c "php artisan migrate --force && php artisan db:seed --force && php artisan serve --host=0.0.0.0 --port=$PORT"
