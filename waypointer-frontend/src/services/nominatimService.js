@@ -14,7 +14,7 @@ class NominatimService {
           limit: 10
         },
         headers: {
-          'User-Agent': 'WayPointer/1.0' // Обязательно для Nominatim
+          'Accept-Language': 'en'
         }
       });
       return response.data;
@@ -40,7 +40,7 @@ class NominatimService {
           addressdetails: 1
         },
         headers: {
-          'User-Agent': 'WayPointer/1.0'
+          'Accept-Language': 'en'
         }
       });
       return response.data;
@@ -62,7 +62,7 @@ class NominatimService {
           limit: 1
         },
         headers: {
-          'User-Agent': 'WayPointer/1.0'
+          'Accept-Language': 'en'
         }
       });
       
@@ -93,7 +93,7 @@ class NominatimService {
           limit: 20
         },
         headers: {
-          'User-Agent': 'WayPointer/1.0'
+          'Accept-Language': 'en'
         }
       });
       return response.data;

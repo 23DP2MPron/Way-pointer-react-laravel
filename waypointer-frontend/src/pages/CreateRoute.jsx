@@ -200,23 +200,41 @@ export default function CreateRoute() {
   const updateNote = (index, notes) => setPoints(points.map((p, i) => i === index ? { ...p, notes } : p));
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
-    try {
-      const payload = { ...form, points };
-      if (isEdit) {
-        await api.put(`/routes/${id}`, payload);
-      } else {
-        await api.post('/routes', payload);
-      }
-      navigate('/my-routes');
-    } catch (err) {
-      setError(err.response?.data?.message || t('routes.failedToSave'));
-    } finally {
-      setSaving(false);
+  e.preventDefault();
+  setError('');
+  setSaving(true);
+  
+  try {
+    // Отправляем чистый JSON — так бэкенд правильно получит
+    // массив points и boolean is_published
+    // Отправляем только точки с валидными target_type и target_id
+    // (привлечения из OpenTripMap не сохраняются — они только для UI)
+    const validPoints = points.filter(p => p.target_id != null);
+
+    const payload = {
+      ...form,
+      points: validPoints.map(p => ({
+        target_type: p.target_type,
+        target_id: p.target_id,
+        notes: p.notes || null,
+      })),
+    };
+
+    if (isEdit) {
+      await api.put(`/routes/${id}`, payload);
+    } else {
+      await api.post('/routes', payload);
     }
-  };
+    
+    navigate('/my-routes');
+  } catch (err) {
+    // ВАЖНО: Выведи ошибки в консоль, чтобы увидеть, на какое поле ругается бэкенд
+    console.error("Validation errors:", err.response?.data?.errors);
+    setError(err.response?.data?.message || t('routes.failedToSave'));
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
