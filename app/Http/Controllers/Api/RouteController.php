@@ -69,42 +69,49 @@ class RouteController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $data = $request->validate([
-            'title'         => ['required', 'string', 'max:255'],
-            'description'   => ['nullable', 'string'],
-            'country'       => ['nullable', 'string'],
-            'city'          => ['nullable', 'string'],
-            'duration_days' => ['nullable', 'integer', 'min:1'],
-            'is_published'  => ['boolean'],
-            'points'        => ['nullable', 'array'],
-            'points.*.target_type' => ['required_with:points', 'in:place,institution'],
-            'points.*.target_id'   => ['required_with:points', 'integer'],
-            'points.*.notes'       => ['nullable', 'string'],
-        ]);
+    // Добавь это для отладки! Потом посмотри файл storage/logs/laravel.log
+    \Log::info('Route creation attempt', $request->all());
 
-        $data['user_id'] = $request->user()->id;
+    $data = $request->validate([
+        'title'         => ['required', 'string', 'max:255'],
+        'description'   => ['nullable', 'string'],
+        'country'       => ['nullable', 'string'],
+        'city'          => ['nullable', 'string'],
+        'duration_days' => ['nullable', 'integer', 'min:1'],
+        'is_published'  => ['boolean'],
+        'points'        => ['nullable', 'array'],
+        // Убедимся, что мы правильно валидируем вложенные поля
+        'points.*.target_type' => ['required', 'in:place,institution'],
+        'points.*.target_id'   => ['required', 'integer'],
+        'points.*.notes'       => ['nullable', 'string'],
+    ]);
 
-        if ($request->hasFile('cover_image')) {
-            $data['cover_image'] = $request->file('cover_image')->store('routes', 'public');
-        }
+    $data['user_id'] = $request->user()->id;
 
-        $points = $data['points'] ?? [];
-        unset($data['points']);
+    if ($request->hasFile('cover_image')) {
+        $data['cover_image'] = $request->file('cover_image')->store('routes', 'public');
+    }
 
-        $route = Route::create($data);
+    // Извлекаем точки перед созданием маршрута
+    $pointsData = $request->input('points', []);
+    
+    // Создаем маршрут
+    $route = Route::create($data);
 
-        foreach ($points as $index => $point) {
+    // СОХРАНЯЕМ ТОЧКИ
+    if (!empty($pointsData)) {
+        foreach ($pointsData as $index => $point) {
             $route->points()->create([
                 'target_type' => $point['target_type'],
-                'target_id'   => $point['target_id'],
+                'target_id'   => (int)$point['target_id'], // Принудительно к числу
                 'order_index' => $index,
                 'notes'       => $point['notes'] ?? null,
             ]);
         }
-
-        return response()->json($route->load('points'), 201);
     }
 
+    return response()->json($route->load('points'), 201);
+    }
     public function update(Request $request, Route $route): JsonResponse
     {
         if ($request->user()->id !== $route->user_id && $request->user()->role !== 'admin') {
