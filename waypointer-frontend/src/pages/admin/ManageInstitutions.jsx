@@ -1,7 +1,16 @@
-import { useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../api/axios';
 
-const empty = { name: '', description: '', category: 'museum', address: '', city: '', country: '', latitude: '', longitude: '' };
+const empty = { 
+  name: '', 
+  description: '', 
+  category: 'museum', // В institutions используем category вместо type
+  address: '', 
+  city: '', 
+  country: '', 
+  latitude: '', 
+  longitude: '' 
+};
 
 export default function ManageInstitutions() {
   const [institutions, setInstitutions] = useState([]);
@@ -10,56 +19,50 @@ export default function ManageInstitutions() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
 
-  const isEdit = editing !== null;
+  // Загрузка данных
+  const load = () => api.get('/institutions?per_page=50')
+    .then(r => setInstitutions(r.data.data || []))
+    .catch(() => setInstitutions([]));
 
-  const load = () => api.get('/institutions?per_page=50').then(r => setInstitutions(r.data.data || [])).catch(() => setInstitutions([]));
   useEffect(() => { load(); }, []);
 
   const save = async (e) => {
     e.preventDefault();
     setSaving(true);
     setMsg('');
-    
     try {
-      // Очищаем данные: если координаты пустые, шлем null вместо ""
-      const payload = { 
+      // Подготовка данных (превращаем пустые координаты в null для Laravel)
+      const payload = {
         ...form,
         latitude: form.latitude === '' ? null : form.latitude,
         longitude: form.longitude === '' ? null : form.longitude
       };
 
-      if (isEdit) {
-        // Используем POST + _method: PUT (самый надежный способ для Laravel)
-        await api.post(`/institutions/${editing}`, { 
-          ...payload, 
-          _method: 'PUT' 
-        });
+      if (editing) {
+        // Используем POST + _method: PUT для максимальной совместимости с Laravel
+        await api.post(`/institutions/${editing}`, { ...payload, _method: 'PUT' });
         setMsg('Institution updated!');
       } else {
-        // Обычный POST для создания
         await api.post('/institutions', payload);
         setMsg('Institution added!');
       }
-
+      
       setForm(empty);
       setEditing(null);
       load();
-      } catch (err) {
-    // 1. Выводим в консоль вообще всё, что прислал сервер
-    console.log("ПОЛНЫЙ ОТВЕТ СЕРВЕРА:", err.response?.data);
-
-    // 2. Достаем детальные ошибки валидации
-    const validationErrors = err.response?.data?.errors;
-    
-    if (validationErrors) {
-      // Собираем все ошибки в одну строку
-      const errorMessages = Object.values(validationErrors).flat().join(' | ');
-      setMsg(`Validation Error: ${errorMessages}`);
-    } else {
-      setMsg(err.response?.data?.message || 'Error saving institution');
+    } catch (err) {
+      // Выводим детальную ошибку, если она есть
+      const serverError = err.response?.data?.errors;
+      if (serverError) {
+        setMsg('Error: ' + Object.values(serverError).flat().join(', '));
+      } else {
+        setMsg(err.response?.data?.message || 'Error saving institution');
+      }
+    } finally {
+      setSaving(false);
     }
-  }
-  }
+  };
+
   const del = async (id) => {
     if (!confirm('Delete this institution?')) return;
     await api.delete(`/institutions/${id}`);
@@ -72,11 +75,11 @@ export default function ManageInstitutions() {
       name: i.name, 
       description: i.description || '', 
       category: i.category, 
-      address: i.address || '',
+      address: i.address || '', 
       city: i.city, 
       country: i.country, 
-      latitude: i.latitude || '',
-      longitude: i.longitude || ''
+      latitude: i.latitude || '', 
+      longitude: i.longitude || '' 
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -88,6 +91,7 @@ export default function ManageInstitutions() {
       <div className="card p-6 mb-8">
         <h2 className="font-display font-semibold mb-4">{editing ? 'Edit Institution' : 'Add New Institution'}</h2>
         {msg && <p className={`text-sm mb-3 ${msg.includes('Error') ? 'text-red-500' : 'text-green-600'}`}>{msg}</p>}
+        
         <form onSubmit={save} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="text-sm font-medium mb-1 block">Name *</label>
@@ -118,16 +122,17 @@ export default function ManageInstitutions() {
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Latitude</label>
-            <input type="number" step="any" className="input" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} placeholder="48.8584" />
+            <input type="number" step="any" className="input" value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} />
           </div>
           <div>
             <label className="text-sm font-medium mb-1 block">Longitude</label>
-            <input type="number" step="any" className="input" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} placeholder="2.2945" />
+            <input type="number" step="any" className="input" value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} />
           </div>
           <div className="sm:col-span-2">
             <label className="text-sm font-medium mb-1 block">Description</label>
             <textarea className="input resize-none" rows={3} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
           </div>
+          
           <div className="sm:col-span-2 flex gap-2">
             <button type="submit" disabled={saving} className="btn-primary">
               {saving ? 'Saving...' : editing ? 'Update Institution' : 'Add Institution'}
@@ -158,4 +163,4 @@ export default function ManageInstitutions() {
       </div>
     </div>
   );
- }
+}
