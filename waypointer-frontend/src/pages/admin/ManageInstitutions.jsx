@@ -44,17 +44,22 @@ export default function ManageInstitutions() {
       setForm(empty);
       setEditing(null);
       load();
-    } catch (err) {
-      // Выводим ошибки в консоль, чтобы точно видеть, на что ругается Laravel
-      console.error("Server Validation Errors:", err.response?.data?.errors);
-      
-      const errorMsg = err.response?.data?.message || 'Error saving institution';
-      setMsg(errorMsg);
-    } finally {
-      setSaving(false);
-    }
-  };
+      } catch (err) {
+    // 1. Выводим в консоль вообще всё, что прислал сервер
+    console.log("ПОЛНЫЙ ОТВЕТ СЕРВЕРА:", err.response?.data);
 
+    // 2. Достаем детальные ошибки валидации
+    const validationErrors = err.response?.data?.errors;
+    
+    if (validationErrors) {
+      // Собираем все ошибки в одну строку
+      const errorMessages = Object.values(validationErrors).flat().join(' | ');
+      setMsg(`Validation Error: ${errorMessages}`);
+    } else {
+      setMsg(err.response?.data?.message || 'Error saving institution');
+    }
+  }
+  }
   const del = async (id) => {
     if (!confirm('Delete this institution?')) return;
     await api.delete(`/institutions/${id}`);
@@ -153,4 +158,4 @@ export default function ManageInstitutions() {
       </div>
     </div>
   );
-}
+ }
