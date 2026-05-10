@@ -1,20 +1,13 @@
 FROM php:8.2-apache
 
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip
+    git curl libpng-dev libonig-dev libxml2-dev zip unzip
 
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
-
 COPY . .
 
 RUN composer install --no-dev --optimize-autoloader
@@ -22,9 +15,9 @@ RUN composer install --no-dev --optimize-autoloader
 RUN chown -R www-data:www-data storage bootstrap/cache && \
     chmod -R 775 storage bootstrap/cache
 
-# FIX APACHE MPM
-RUN a2dismod mpm_event || true && \
-    a2dismod mpm_worker || true && \
+# FIX APACHE MPM — удаляем все MPM и подключаем только prefork
+RUN rm -f /etc/apache2/mods-enabled/mpm_*.load \
+          /etc/apache2/mods-enabled/mpm_*.conf && \
     a2enmod mpm_prefork && \
     a2enmod rewrite
 
@@ -35,5 +28,4 @@ RUN sed -i 's|/var/www/html|/var/www/html/public|g' \
     /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8080
-
 CMD ["apache2-foreground"]
