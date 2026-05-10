@@ -12,7 +12,7 @@ export default function Home() {
   const [routes, setRoutes] = useState([]);
 
   useEffect(() => {
-    api.get('/places?per_page=6&sort_by=rating&sort_dir=desc').then(r => setPlaces(r.data.data || []));
+    api.get('/places?per_page=6&random=1').then(r => setPlaces(r.data.data || []));
     api.get('/routes?per_page=3').then(r => setRoutes(r.data.data || []));
   }, []);
 

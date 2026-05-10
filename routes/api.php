@@ -58,3 +58,9 @@ Route::get('/places/top', function () {
         ->limit(10)
         ->get();
 });
+
+Route::get('/top-places', function() {
+    return \App\Models\Place::orderBy('rating', 'desc')->limit(6)->get();
+});
+
+Route::get('/places/random', [PlaceController::class, 'getRandomPlaces']);
