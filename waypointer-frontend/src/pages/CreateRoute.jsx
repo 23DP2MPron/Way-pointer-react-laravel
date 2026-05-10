@@ -204,41 +204,40 @@ export default function CreateRoute() {
     setError('');
     setSaving(true);
     
+    // Внутри handleSubmit
     try {
-      // 1. Фильтруем только те точки, которые есть в нашей базе (ID не null)
       const validPoints = points
         .filter(p => p.target_id !== null && p.target_id !== undefined)
         .map((p, index) => ({
-          target_type: p.target_type, // 'place' или 'institution'
+          target_type: p.target_type,
           target_id: parseInt(p.target_id, 10),
-          notes: p.notes || "", // Отправляем пустую строку вместо null, если заметок нет
-          order_index: index // Добавляем индекс для порядка
+          notes: p.notes || "",
+          order_index: index
         }));
 
-      // 2. Формируем чистый объект для отправки
       const payload = {
         title: form.title,
         description: form.description || "",
         country: form.country || "",
         city: form.city || "",
         duration_days: form.duration_days ? parseInt(form.duration_days, 10) : null,
-        is_published: !!form.is_published, // Гарантируем true/false
-        points: validPoints, // Массив объектов
+        is_published: form.is_published ? 1 : 0, // Laravel лучше понимает 1/0 для булевых значений
+        points: validPoints,
       };
 
-      console.log("Sending payload:", payload); // Для отладки в консоли
-
       if (isEdit) {
-        // Используем PUT для обновления
-        await api.put(`/routes/${id}`, payload);
+        // ВАЖНО: Используем POST и добавляем _method: 'PUT'
+        await api.post(`/routes/${id}`, { 
+          ...payload, 
+          _method: 'PUT' 
+        });
       } else {
-        // Используем POST для создания
         await api.post('/routes', payload);
       }
       
       navigate('/my-routes');
     } catch (err) {
-      console.error("Full server error:", err.response?.data);
+      console.error("Server Error Response:", err.response?.data);
       const serverErrors = err.response?.data?.errors;
       
       if (serverErrors) {
