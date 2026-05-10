@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Cache bust: 2026-05-10-v3
+# Cache bust: 2026-05-10-v4
 RUN apt-get update && apt-get install -y \
     git curl libpng-dev libonig-dev libxml2-dev zip unzip && \
     rm -rf /var/lib/apt/lists/*
