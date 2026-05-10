@@ -46,7 +46,7 @@ CMD ["bash", "-c", \
      find /etc/apache2 -name 'mpm_*.conf' -delete && \
      echo 'LoadModule mpm_prefork_module /usr/lib/apache2/modules/mod_mpm_prefork.so' \
          > /etc/apache2/mods-enabled/mpm_prefork.load && \
-     php artisan config:cache && \
-     php artisan route:cache && \
-     php artisan migrate --force && \
+     php artisan config:cache 2>&1 && \
+     php artisan route:cache 2>&1 && \
+     php artisan migrate --force 2>&1 && \
      apache2-foreground"]
