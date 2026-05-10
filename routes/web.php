@@ -25,3 +25,9 @@
 // });
 
 // require __DIR__.'/auth.php';
+use Illuminate\Support\Facades\Route;
+
+Route::fallback(function () {
+    // Убедись, что путь совпадает (мы переместили index.html в public)
+    return file_get_contents(public_path('index.html'));
+});
