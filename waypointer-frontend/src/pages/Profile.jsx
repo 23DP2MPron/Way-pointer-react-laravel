@@ -12,7 +12,10 @@ export default function Profile() {
     e.preventDefault();
     setError(''); setSuccess('');
     try {
-      const { data } = await api.post('/me', form);
+      const payload = { name: form.name, email: form.email, bio: form.bio };
+      if (form.password) payload.password = form.password;
+      if (form.password_confirmation) payload.password_confirmation = form.password_confirmation;
+      const { data } = await api.post('/me', payload);
       localStorage.setItem('user', JSON.stringify(data));
       setSuccess('Profile updated successfully!');
     } catch (err) {

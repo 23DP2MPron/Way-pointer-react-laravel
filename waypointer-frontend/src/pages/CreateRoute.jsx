@@ -199,58 +199,55 @@ export default function CreateRoute() {
 
   const updateNote = (index, notes) => setPoints(points.map((p, i) => i === index ? { ...p, notes } : p));
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSaving(true);
-    
-    // Внутри handleSubmit
-    try {
-      const validPoints = points
-        .filter(p => p.target_id !== null && p.target_id !== undefined)
-        .map((p, index) => ({
-          target_type: p.target_type,
-          target_id: parseInt(p.target_id, 10),
-          notes: p.notes || "",
-          order_index: index
-        }));
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setError('');
+  setSaving(true);
 
-      const payload = {
-        title: form.title,
-        description: form.description || "",
-        country: form.country || "",
-        city: form.city || "",
-        duration_days: form.duration_days ? parseInt(form.duration_days, 10) : null,
-        is_published: form.is_published ? 1 : 0, // Laravel лучше понимает 1/0 для булевых значений
-        points: validPoints,
-      };
+  try {
+    // Фильтруем точки: убираем привлечения (attraction) — они только для UI
+    const validPoints = points
+      .filter(p => p.target_id !== null && p.target_id !== undefined)
+      .map((p, index) => ({
+        target_type: p.target_type,
+        target_id: Number(p.target_id),
+        notes: p.notes || '',
+      }));
 
-      if (isEdit) {
-        // ВАЖНО: Используем POST и добавляем _method: 'PUT'
-        await api.post(`/routes/${id}`, { 
-          ...payload, 
-          _method: 'PUT' 
-        });
-      } else {
-        await api.post('/routes', payload);
-      }
-      
-      navigate('/my-routes');
-    } catch (err) {
-      console.error("Server Error Response:", err.response?.data);
-      const serverErrors = err.response?.data?.errors;
-      
-      if (serverErrors) {
-        // Склеиваем все ошибки валидации в одну строку
-        const msg = Object.values(serverErrors).flat().join(', ');
-        setError(msg);
-      } else {
-        setError(err.response?.data?.message || t('routes.failedToSave'));
-      }
-    } finally {
-      setSaving(false);
+    const payload = {
+      title: form.title,
+      description: form.description || '',
+      country: form.country || '',
+      city: form.city || '',
+      duration_days: form.duration_days ? Number(form.duration_days) : null,
+      is_published: Boolean(form.is_published),
+    };
+
+    // Не отправляем points если пусто — иначе required_with сработает некорректно
+    if (validPoints.length > 0) {
+      payload.points = validPoints;
     }
-  };
+
+    if (isEdit) {
+      await api.put(`/routes/${id}`, payload);
+    } else {
+      await api.post('/routes', payload);
+    }
+
+    navigate('/my-routes');
+  } catch (err) {
+    console.error('Server Error:', err.response?.data);
+    const serverErrors = err.response?.data?.errors;
+    if (serverErrors) {
+      const msg = Object.values(serverErrors).flat().join(', ');
+      setError(msg);
+    } else {
+      setError(err.response?.data?.message || 'Ошибка при сохранении');
+    }
+  } finally {
+    setSaving(false);
+  }
+};
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">

@@ -43,8 +43,7 @@ export default function ManageInstitutions() {
       };
 
       if (editing) {
-        // Используем POST + _method PUT для Laravel
-        await api.post(`/institutions/${editing}`, { ...payload, _method: 'PUT' });
+        await api.put(`/institutions/${editing}`, payload);
         setMsg('Updated successfully!');
       } else {
         await api.post('/institutions', payload);
