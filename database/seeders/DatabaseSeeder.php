@@ -30,5 +30,8 @@ class DatabaseSeeder extends Seeder
 
         $this->call(PlacesAndInstitutionsSeeder::class);
         $this->call(AddImageUrlsSeeder::class);
+        $this->call(UsersTableSeeder::class);
+        $this->call(PlacesTableSeeder::class);
+        $this->call(InstitutionsTableSeeder::class);
     }
 }
