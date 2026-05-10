@@ -51,3 +51,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/users/{user}',     [UserController::class, 'destroy']);
     });
 });
+Route::get('/places/top', function () {
+    // Получаем места с рейтингом >= 4, сортируем по убыванию
+    return \App\Models\Place::where('rating', '>=', 4)
+        ->orderBy('rating', 'desc')
+        ->limit(10)
+        ->get();
+});
