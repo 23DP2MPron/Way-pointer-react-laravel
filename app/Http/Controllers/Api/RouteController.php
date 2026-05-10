@@ -32,11 +32,14 @@ class RouteController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Сортировка по средней оценке (по убыванию), затем по дате создания
-        $query->orderByDesc('reviews_avg_rating')
+        // Исправленная сортировка: сначала по рейтингу, потом самые новые
+        $query->orderByRaw('reviews_avg_rating DESC NULLS LAST') 
               ->latest();
 
-        return response()->json($query->paginate(12));
+        // Берем per_page из запроса (на главной это 3, в поиске 12)
+        $perPage = $request->get('per_page', 12);
+
+        return response()->json($query->paginate($perPage));
     }
 
     public function myRoutes(Request $request): JsonResponse
