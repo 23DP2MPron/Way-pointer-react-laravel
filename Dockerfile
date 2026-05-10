@@ -29,11 +29,17 @@ RUN sed -i 's/Listen 80/Listen 8080/' /etc/apache2/ports.conf && \
     sed -i 's/<VirtualHost \*:80>/<VirtualHost *:8080>/' \
         /etc/apache2/sites-available/000-default.conf
 
-RUN sed -i 's|/var/www/html|/var/www/html/public|g' \
+RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
     /etc/apache2/sites-available/000-default.conf
 
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' \
-    /etc/apache2/apache2.conf
+# Явно добавляем Directory блок с AllowOverride All
+RUN sed -i '/<\/VirtualHost>/i \
+    <Directory /var/www/html/public>\n\
+        Options Indexes FollowSymLinks\n\
+        AllowOverride All\n\
+        Require all granted\n\
+    </Directory>' \
+    /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8080
 
