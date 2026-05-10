@@ -1,59 +1,77 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+WayPointer — tūrisma maršrutu plānošanas platforma
+WayPointer ir tīmekļa platforma, kas paredzēta tūrisma objektu un iestāžu meklēšanai, vērtēšanai un saglabāšanai, kā arī personalizētu ceļojumu maršrutu izveidei un publicēšanai.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Projekts izstrādāts mācību programmas „Programmēšana” ietvaros
+Rīgas Valsts tehnikums, 2025–2026
+Autors: Maksym Pronkin (DP3-2)
 
-## About Laravel
+📌 Projekta mērķis
+Projekta mērķis ir izveidot vienotu tiešsaistes sistēmu, kas apvieno:
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+tūrisma objektu meklēšanu un vērtēšanu;
+iestāžu (kafejnīcu, restorānu, viesnīcu) apskati;
+lietotāju veidotu ceļojumu maršrutu plānošanu;
+pieredzes apmaiņu starp lietotājiem.
+Esošās platformas (TripAdvisor, Google Maps, Visit A City) piedāvā tikai daļu no šīs funkcionalitātes, tādēļ WayPointer nodrošina integrētu un personalizētu risinājumu.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+🧭 Galvenā funkcionalitāte
+Lietotāju reģistrācija un pieteikšanās (ar e-pastu)
+Tūrisma objektu katalogs ar aprakstiem un tipiem
+Meklēšana un filtrēšana
+Atsauksmju un vērtējumu pievienošana (1–5)
+Maršrutu izveide, rediģēšana un publicēšana
+Objektu un maršrutu pievienošana izlasei
+Citu lietotāju maršrutu apskate
+Lietotāja profila pārvaldība
+Administrēšana un satura moderēšana
+👥 Lietotāju lomas
+Viesis
+Apskata publiski pieejamus tūrisma objektus
+Lasa atsauksmes
+Reģistrējas pilnas piekļuves iegūšanai
+Reģistrēts lietotājs
+Veido un pārvalda maršrutus
+Pievieno atsauksmes un vērtējumus
+Saglabā objektus un maršrutus izlasei
+Rediģē vai dzēš savu profilu
+Administrators
+Pārvalda lietotājus
+Moderē atsauksmes
+Uzrauga datu un satura korektumu
+🏗️ Sistēmas arhitektūra
+Sistēma balstīta uz šādām galvenajām entītijām:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+User — sistēmas lietotājs
+TouristPlace — tūrisma objekts
+Institution — iestāde (restorāns, viesnīca u.c.)
+Route — ceļojuma maršruts
+RoutePoint — maršruta punkts
+Review — lietotāja atsauksme
+Favorites — izlases elementi
+Country / City — ģeogrāfiskā struktūra
+Entītiju attiecības definētas UML un ER diagrammās.
 
-## Learning Laravel
+🗄️ Datu bāzes struktūra
+Sistēmā tiek izmantota relāciju datubāze ar normalizētu struktūru.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Galvenās tabulas:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+User
+Tourist_place
+Institution
+Route
+Route_point
+Review
+Favorites
+Country
+City
+Piemērs: tabula User
+CREATE TABLE IF NOT EXISTS `User` (
+  `id` int(20) NOT NULL AUTO_INCREMENT,
+  `name` varchar(50) NOT NULL,
+  `email` varchar(50) NOT NULL,
+  `password` varchar(50) NOT NULL,
+  `role` enum('user', 'admin') NOT NULL DEFAULT 'user',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `users_email_unique` (`email`)
+);
