@@ -211,8 +211,14 @@ export default function CreateRoute() {
     // (привлечения из OpenTripMap не сохраняются — они только для UI)
     const validPoints = points.filter(p => p.target_id != null);
 
+    // duration_days: пустая строка → null, иначе число
+    const durationDays = form.duration_days
+      ? parseInt(form.duration_days, 10)
+      : null;
+
     const payload = {
       ...form,
+      duration_days: durationDays,
       points: validPoints.map(p => ({
         target_type: p.target_type,
         target_id: p.target_id,

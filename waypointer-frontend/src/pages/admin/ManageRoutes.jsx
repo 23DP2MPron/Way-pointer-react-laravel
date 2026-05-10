@@ -31,7 +31,6 @@ export default function ManageRoutes() {
   const togglePublish = async (route) => {
     try {
       await api.put(`/routes/${route.id}`, {
-        ...route,
         is_published: !route.is_published
       });
       setMsg(`Route ${!route.is_published ? 'published' : 'unpublished'} successfully!`);
