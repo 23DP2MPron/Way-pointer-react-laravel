@@ -22,7 +22,7 @@ class RoutePoint extends Model
     ];
 
     // Автоматически загружать связь target при получении точки
-    protected $with = ['target'];
+    // protected $with = ['target']; // Временно отключено для отладки
 
     // Связь с маршрутом
     public function route()

@@ -64,3 +64,14 @@ Route::get('/top-places', function() {
 });
 
 Route::get('/places/random', [PlaceController::class, 'getRandomPlaces']);
+
+// Debug endpoint - remove in production
+Route::get('/debug/route-points/{route}', function(\App\Models\Route $route) {
+    return response()->json([
+        'route_id' => $route->id,
+        'route_title' => $route->title,
+        'points_count' => $route->points()->count(),
+        'points' => $route->points()->get(),
+        'points_with_target' => $route->points()->with('target')->get(),
+    ]);
+});

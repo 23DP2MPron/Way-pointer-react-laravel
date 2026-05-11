@@ -88,20 +88,34 @@ class RouteController extends Controller
     $pointsData = $data['points'] ?? [];
     unset($data['points']);
     
+    \Log::info('Creating route with points', [
+        'points_data' => $pointsData,
+        'route_data' => $data
+    ]);
+    
     // Создаем маршрут
     $route = Route::create($data);
 
     // Сохраняем точки маршрута
     if (!empty($pointsData)) {
         foreach ($pointsData as $index => $point) {
-            $route->points()->create([
+            \Log::info('Creating point', [
+                'index' => $index,
+                'point' => $point
+            ]);
+            
+            $createdPoint = $route->points()->create([
                 'target_type' => $point['target_type'],
                 'target_id'   => (int)$point['target_id'],
                 'order_index' => $index,
                 'notes'       => $point['notes'] ?? null,
             ]);
+            
+            \Log::info('Point created', ['point_id' => $createdPoint->id]);
         }
     }
+
+    \Log::info('Route created with points count', ['points_count' => $route->points()->count()]);
 
     return response()->json($route->load('points.target'), 201);
     }

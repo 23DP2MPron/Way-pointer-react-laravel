@@ -55,8 +55,6 @@ export default function RouteDetails() {
 
   useEffect(() => {
     api.get(`/routes/${id}`).then(r => {
-      console.log('Route data received:', r.data);
-      console.log('Route points:', r.data.points);
       setRoute(r.data);
     }).finally(() => setLoading(false));
     if (user) {
