@@ -54,7 +54,11 @@ export default function RouteDetails() {
   }, [id]);
 
   useEffect(() => {
-    api.get(`/routes/${id}`).then(r => setRoute(r.data)).finally(() => setLoading(false));
+    api.get(`/routes/${id}`).then(r => {
+      console.log('Route data received:', r.data);
+      console.log('Route points:', r.data.points);
+      setRoute(r.data);
+    }).finally(() => setLoading(false));
     if (user) {
       api.get('/favorites/check', { params: { target_type: 'route', target_id: id } })
         .then(r => setFavorited(r.data.favorited))
@@ -133,14 +137,14 @@ export default function RouteDetails() {
         )}
       </div>
 
-      <h2 className="text-xl font-display font-bold mb-4">Route Points</h2>
+      <h2 className="text-xl font-display font-bold mb-4 text-gray-900 dark:text-white">Route Points</h2>
 
       {(!route.points || route.points.length === 0) ? (
-        <p className="text-gray-500">No points added to this route yet.</p>
+        <p className="text-gray-500 dark:text-gray-400">No points added to this route yet.</p>
       ) : (
         <div className="flex flex-col gap-4 mb-8">
           {route.points.map((point, index) => {
-            const target = point.target_detail;
+            const target = point.target || point.target_detail;
             return (
               <div key={point.id} className="card p-4 flex gap-4">
                 <div className="w-8 h-8 rounded-full bg-green-600 dark:bg-teal-500 text-white flex items-center justify-center text-sm font-bold shrink-0">
@@ -155,7 +159,7 @@ export default function RouteDetails() {
                       >
                         {target.name}
                       </Link>
-                      <p className="text-xs text-gray-500">{target.city}, {target.country} · {point.target_type}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{target.city}, {target.country} · {point.target_type}</p>
                     </>
                   ) : (
                     <p className="text-gray-500 text-sm">Deleted location</p>

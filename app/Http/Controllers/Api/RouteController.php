@@ -73,8 +73,8 @@ class RouteController extends Controller
         'duration_days' => ['nullable', 'integer', 'min:1'],
         'is_published'  => ['boolean'],
         'points'        => ['nullable', 'array'],
-        'points.*.target_type' => ['required', 'in:place,institution'],
-        'points.*.target_id'   => ['required', 'integer'],
+        'points.*.target_type' => ['required_with:points.*', 'in:place,institution'],
+        'points.*.target_id'   => ['required_with:points.*', 'integer'],
         'points.*.notes'       => ['nullable', 'string'],
     ]);
 
@@ -103,7 +103,7 @@ class RouteController extends Controller
         }
     }
 
-    return response()->json($route->load('points'), 201);
+    return response()->json($route->load('points.target'), 201);
     }
     public function update(Request $request, Route $route): JsonResponse
     {
@@ -145,7 +145,7 @@ class RouteController extends Controller
             }
         }
 
-        return response()->json($route->load('points'));
+        return response()->json($route->load('points.target'));
     }
 
     public function destroy(Request $request, Route $route): JsonResponse

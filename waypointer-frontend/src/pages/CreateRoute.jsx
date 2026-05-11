@@ -214,6 +214,8 @@ const handleSubmit = async (e) => {
         notes: p.notes || '',
       }));
 
+    console.log('Valid points to send:', validPoints);
+
     const payload = {
       title: form.title,
       description: form.description || '',
@@ -227,6 +229,8 @@ const handleSubmit = async (e) => {
     if (validPoints.length > 0) {
       payload.points = validPoints;
     }
+
+    console.log('Payload to send:', payload);
 
     if (isEdit) {
       await api.put(`/routes/${id}`, payload);
