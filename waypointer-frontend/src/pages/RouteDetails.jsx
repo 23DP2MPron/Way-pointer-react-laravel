@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -41,17 +41,7 @@ export default function RouteDetails() {
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    api.get(`/routes/${id}`).then(r => setRoute(r.data)).finally(() => setLoading(false));
-    if (user) {
-      api.get('/favorites/check', { params: { target_type: 'route', target_id: id } })
-        .then(r => setFavorited(r.data.favorited))
-        .catch(() => {});
-    }
-    loadReviews();
-  }, [id, user]);
-
-  const loadReviews = async () => {
+  const loadReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
       const { data } = await api.get(`/routes/${id}/reviews`);
@@ -61,7 +51,17 @@ export default function RouteDetails() {
     } finally {
       setReviewsLoading(false);
     }
-  };
+  }, [id]);
+
+  useEffect(() => {
+    api.get(`/routes/${id}`).then(r => setRoute(r.data)).finally(() => setLoading(false));
+    if (user) {
+      api.get('/favorites/check', { params: { target_type: 'route', target_id: id } })
+        .then(r => setFavorited(r.data.favorited))
+        .catch(() => {});
+    }
+    loadReviews();
+  }, [id, user, loadReviews]);
 
   const toggleFavorite = async () => {
     if (!user) return;

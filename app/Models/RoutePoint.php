@@ -21,6 +21,9 @@ class RoutePoint extends Model
         'order_index' => 'integer'
     ];
 
+    // Автоматически загружать связь target при получении точки
+    protected $with = ['target'];
+
     // Связь с маршрутом
     public function route()
     {

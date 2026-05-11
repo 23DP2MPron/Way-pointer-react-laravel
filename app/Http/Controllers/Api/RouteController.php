@@ -43,7 +43,7 @@ class RouteController extends Controller
 
     public function myRoutes(Request $request): JsonResponse
     {
-        $routes = Route::with(['points'])
+        $routes = Route::with(['points.target'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->paginate(12);
@@ -57,22 +57,15 @@ class RouteController extends Controller
             abort(403);
         }
 
-        $route->load(['user', 'points', 'reviews.user']);
-
-        // Attach target details to each point
-        $route->points->each(function ($point) {
-            $point->target_detail = $point->target_detail;
-        });
+        // Загружаем связи, включая полиморфную связь target для точек
+        $route->load(['user', 'points.target', 'reviews.user']);
 
         return response()->json($route);
     }
 
     public function store(Request $request): JsonResponse
     {
-    // Добавь это для отладки! Потом посмотри файл storage/logs/laravel.log
-    \Log::info('Route creation attempt', $request->all());
-
-    $data = $request->validate([
+        $data = $request->validate([
         'title'         => ['required', 'string', 'max:255'],
         'description'   => ['nullable', 'string'],
         'country'       => ['nullable', 'string'],
@@ -80,7 +73,6 @@ class RouteController extends Controller
         'duration_days' => ['nullable', 'integer', 'min:1'],
         'is_published'  => ['boolean'],
         'points'        => ['nullable', 'array'],
-        // Убедимся, что мы правильно валидируем вложенные поля
         'points.*.target_type' => ['required', 'in:place,institution'],
         'points.*.target_id'   => ['required', 'integer'],
         'points.*.notes'       => ['nullable', 'string'],
@@ -93,17 +85,18 @@ class RouteController extends Controller
     }
 
     // Извлекаем точки перед созданием маршрута
-    $pointsData = $request->input('points', []);
+    $pointsData = $data['points'] ?? [];
+    unset($data['points']);
     
     // Создаем маршрут
     $route = Route::create($data);
 
-    // СОХРАНЯЕМ ТОЧКИ
+    // Сохраняем точки маршрута
     if (!empty($pointsData)) {
         foreach ($pointsData as $index => $point) {
             $route->points()->create([
                 'target_type' => $point['target_type'],
-                'target_id'   => (int)$point['target_id'], // Принудительно к числу
+                'target_id'   => (int)$point['target_id'],
                 'order_index' => $index,
                 'notes'       => $point['notes'] ?? null,
             ]);
