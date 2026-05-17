@@ -17,9 +17,8 @@ class RouteController extends Controller
             ->withCount('reviews');
 
         if (!auth()->check() || auth()->user()->role !== 'admin') {
-            // Guests and regular users see only published or their own
             if (auth()->check()) {
-                $query->where(function($q) {
+                $query->where(function ($q) {
                     $q->where('is_published', true)
                       ->orWhere('user_id', auth()->id());
                 });
@@ -32,10 +31,8 @@ class RouteController extends Controller
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // Исправленная сортировка: сначала по рейтингу, потом самые новые
         $query->orderByDesc('created_at');
 
-        // Берем per_page из запроса (на главной это 3, в поиске 12)
         $perPage = $request->get('per_page', 12);
 
         return response()->json($query->paginate($perPage));
@@ -57,7 +54,6 @@ class RouteController extends Controller
             abort(403);
         }
 
-        // Загружаем связи, включая полиморфную связь target для точек
         $route->load(['user', 'points.target', 'reviews.user']);
 
         return response()->json($route);
@@ -65,60 +61,53 @@ class RouteController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        // Валидируем основные поля маршрута
         $data = $request->validate([
-        'title'         => ['required', 'string', 'max:255'],
-        'description'   => ['nullable', 'string'],
-        'country'       => ['nullable', 'string'],
-        'city'          => ['nullable', 'string'],
-        'duration_days' => ['nullable', 'integer', 'min:1'],
-        'is_published'  => ['boolean'],
-        'points'        => ['nullable', 'array'],
-        'points.*.target_type' => ['required_with:points.*', 'in:place,institution'],
-        'points.*.target_id'   => ['required_with:points.*', 'integer'],
-        'points.*.notes'       => ['nullable', 'string'],
-    ]);
+            'title'         => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
+            'country'       => ['nullable', 'string'],
+            'city'          => ['nullable', 'string'],
+            'duration_days' => ['nullable', 'integer', 'min:1'],
+            'is_published'  => ['boolean'],
+            'points'        => ['nullable', 'array'],
+        ]);
 
-    $data['user_id'] = $request->user()->id;
+        // Берём точки напрямую из запроса (до validate, чтобы не потерять)
+        $rawPoints = $request->input('points', []);
 
-    if ($request->hasFile('cover_image')) {
-        $data['cover_image'] = $request->file('cover_image')->store('routes', 'public');
-    }
-
-    // Извлекаем точки перед созданием маршрута
-    $pointsData = $data['points'] ?? [];
-    unset($data['points']);
-    
-    \Log::info('Creating route with points', [
-        'points_data' => $pointsData,
-        'route_data' => $data
-    ]);
-    
-    // Создаем маршрут
-    $route = Route::create($data);
-
-    // Сохраняем точки маршрута
-    if (!empty($pointsData)) {
-        foreach ($pointsData as $index => $point) {
-            \Log::info('Creating point', [
-                'index' => $index,
-                'point' => $point
+        // Валидируем точки отдельно — только если они есть
+        if (!empty($rawPoints)) {
+            $request->validate([
+                'points.*.target_type' => ['required', 'string', 'in:place,institution'],
+                'points.*.target_id'   => ['required', 'integer', 'min:1'],
+                'points.*.notes'       => ['nullable', 'string'],
             ]);
-            
-            $createdPoint = $route->points()->create([
+        }
+
+        $data['user_id'] = $request->user()->id;
+
+        if ($request->hasFile('cover_image')) {
+            $data['cover_image'] = $request->file('cover_image')->store('routes', 'public');
+        }
+
+        // Убираем points из $data — это не поле таблицы routes
+        unset($data['points']);
+
+        $route = Route::create($data);
+
+        // Сохраняем точки маршрута
+        foreach ($rawPoints as $index => $point) {
+            $route->points()->create([
                 'target_type' => $point['target_type'],
-                'target_id'   => (int)$point['target_id'],
+                'target_id'   => (int) $point['target_id'],
                 'order_index' => $index,
                 'notes'       => $point['notes'] ?? null,
             ]);
-            
-            \Log::info('Point created', ['point_id' => $createdPoint->id]);
         }
+
+        return response()->json($route->load('points.target'), 201);
     }
 
-    \Log::info('Route created with points count', ['points_count' => $route->points()->count()]);
-
-    return response()->json($route->load('points.target'), 201);
-    }
     public function update(Request $request, Route $route): JsonResponse
     {
         if ($request->user()->id !== $route->user_id && $request->user()->role !== 'admin') {
@@ -133,26 +122,34 @@ class RouteController extends Controller
             'duration_days' => ['nullable', 'integer'],
             'is_published'  => ['boolean'],
             'points'        => ['nullable', 'array'],
-            'points.*.target_type' => ['required_with:points', 'in:place,institution'],
-            'points.*.target_id'   => ['required_with:points', 'integer'],
-            'points.*.notes'       => ['nullable', 'string'],
         ]);
+
+        // Берём точки напрямую из запроса
+        $rawPoints = $request->input('points');
+
+        // Валидируем точки отдельно — только если они есть
+        if (!empty($rawPoints)) {
+            $request->validate([
+                'points.*.target_type' => ['required', 'string', 'in:place,institution'],
+                'points.*.target_id'   => ['required', 'integer', 'min:1'],
+                'points.*.notes'       => ['nullable', 'string'],
+            ]);
+        }
 
         if ($request->hasFile('cover_image')) {
             $data['cover_image'] = $request->file('cover_image')->store('routes', 'public');
         }
 
-        $points = $data['points'] ?? null;
         unset($data['points']);
-
         $route->update($data);
 
-        if ($points !== null) {
+        // Обновляем точки только если поле points было передано в запросе
+        if ($rawPoints !== null) {
             $route->points()->delete();
-            foreach ($points as $index => $point) {
+            foreach ($rawPoints as $index => $point) {
                 $route->points()->create([
                     'target_type' => $point['target_type'],
-                    'target_id'   => $point['target_id'],
+                    'target_id'   => (int) $point['target_id'],
                     'order_index' => $index,
                     'notes'       => $point['notes'] ?? null,
                 ]);
@@ -172,46 +169,39 @@ class RouteController extends Controller
         return response()->json(['message' => 'Route deleted']);
     }
 
-    // Добавить отзыв к маршруту
     public function addReview(Request $request, Route $route): JsonResponse
     {
-        // Проверяем, что маршрут опубликован
         if (!$route->is_published) {
             abort(403, 'Cannot review unpublished route');
         }
 
-        // Проверяем, что пользователь не оставляет отзыв на свой маршрут
         if ($request->user()->id === $route->user_id) {
             abort(403, 'Cannot review your own route');
         }
 
         $data = $request->validate([
-            'rating' => ['required', 'integer', 'min:1', 'max:5'],
+            'rating'  => ['required', 'integer', 'min:1', 'max:5'],
             'comment' => ['required', 'string', 'max:1000'],
         ]);
 
-        // Проверяем, не оставлял ли пользователь уже отзыв
         $existingReview = $route->reviews()
             ->where('user_id', $request->user()->id)
             ->first();
 
         if ($existingReview) {
-            // Обновляем существующий отзыв
             $existingReview->update($data);
             return response()->json($existingReview->load('user'));
         }
 
-        // Создаем новый отзыв
         $review = $route->reviews()->create([
             'user_id' => $request->user()->id,
-            'rating' => $data['rating'],
+            'rating'  => $data['rating'],
             'comment' => $data['comment'],
         ]);
 
         return response()->json($review->load('user'), 201);
     }
 
-    // Получить отзывы маршрута
     public function getReviews(Route $route): JsonResponse
     {
         if (!$route->is_published && auth()->id() !== $route->user_id && auth()->user()?->role !== 'admin') {

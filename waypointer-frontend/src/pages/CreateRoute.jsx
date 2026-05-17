@@ -46,7 +46,7 @@ export default function CreateRoute() {
           target_type: p.target_type,
           target_id: p.target_id,
           notes: p.notes || '',
-          name: p.target_detail?.name || 'Unknown',
+          name: p.target?.name || p.target_detail?.name || 'Unknown',
         })) || []);
       });
     }

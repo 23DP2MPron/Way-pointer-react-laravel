@@ -66,12 +66,45 @@ Route::get('/top-places', function() {
 Route::get('/places/random', [PlaceController::class, 'getRandomPlaces']);
 
 // Debug endpoint - remove in production
-Route::get('/debug/route-points/{route}', function(\App\Models\Route $route) {
+Route::get('/debug/route-points/{id}', function ($id) {
+    $route = \App\Models\Route::find($id);
+    if (!$route) {
+        return response()->json(['error' => 'Route not found'], 404);
+    }
+
+    $columns = \Illuminate\Support\Facades\Schema::getColumnListing('route_points');
+
+    $rawPoints = \Illuminate\Support\Facades\DB::table('route_points')
+        ->where('route_id', $id)
+        ->get();
+
     return response()->json([
-        'route_id' => $route->id,
-        'route_title' => $route->title,
-        'points_count' => $route->points()->count(),
-        'points' => $route->points()->get(),
-        'points_with_target' => $route->points()->with('target')->get(),
+        'route_id'           => $route->id,
+        'route_title'        => $route->title,
+        'table_columns'      => $columns,
+        'raw_points_count'   => $rawPoints->count(),
+        'raw_points'         => $rawPoints,
+        'model_points_count' => $route->points()->count(),
+        'model_points'       => $route->points()->with('target')->get(),
+    ]);
+});
+
+// Debug: создать тестовую точку для маршрута
+Route::post('/debug/add-point/{id}', function ($id, \Illuminate\Http\Request $request) {
+    $route = \App\Models\Route::find($id);
+    if (!$route) {
+        return response()->json(['error' => 'Route not found'], 404);
+    }
+
+    $point = $route->points()->create([
+        'target_type' => $request->input('target_type', 'place'),
+        'target_id'   => (int) $request->input('target_id', 1),
+        'order_index' => $route->points()->count(),
+        'notes'       => $request->input('notes', 'Test point'),
+    ]);
+
+    return response()->json([
+        'created_point' => $point,
+        'all_points'    => $route->points()->with('target')->get(),
     ]);
 });
