@@ -76,8 +76,9 @@ class AuthController extends Controller
 
         $data = $request->only('name', 'email', 'bio');
 
+        // Модель User имеет cast 'password' => 'hashed', поэтому хешировать вручную не нужно
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $data['password'] = $request->password;
         }
 
         $user->update($data);
