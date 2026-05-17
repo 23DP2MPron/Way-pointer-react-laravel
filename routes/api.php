@@ -34,6 +34,39 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/routes/{route}', [RouteController::class,   'destroy']);
     Route::post('/routes/{route}/reviews', [RouteController::class, 'addReview']);
 
+    // Сохранить внешнюю достопримечательность в БД и вернуть её ID
+    Route::post('/places/from-external', function (\Illuminate\Http\Request $request) {
+        $data = $request->validate([
+            'name'      => ['required', 'string', 'max:255'],
+            'city'      => ['nullable', 'string'],
+            'country'   => ['nullable', 'string'],
+            'latitude'  => ['nullable', 'numeric'],
+            'longitude' => ['nullable', 'numeric'],
+            'category'  => ['nullable', 'string'],
+        ]);
+
+        // Ищем существующее место с таким же именем и городом
+        $existing = \App\Models\Place::where('name', $data['name'])
+            ->when(!empty($data['city']), fn($q) => $q->where('city', $data['city']))
+            ->first();
+
+        if ($existing) {
+            return response()->json($existing, 200);
+        }
+
+        $place = \App\Models\Place::create([
+            'name'      => $data['name'],
+            'city'      => $data['city'] ?? null,
+            'country'   => $data['country'] ?? null,
+            'latitude'  => $data['latitude'] ?? null,
+            'longitude' => $data['longitude'] ?? null,
+            'category'  => $data['category'] ?? null,
+            'type'      => 'attraction',
+        ]);
+
+        return response()->json($place, 201);
+    });
+
     Route::post('/reviews',          [ReviewController::class,  'store']);
     Route::delete('/reviews/{review}', [ReviewController::class, 'destroy']);
 

@@ -180,17 +180,36 @@ export default function CreateRoute() {
     setShowDropdown(false);
   };
 
-  const addAttractionAsPoint = (attraction) => {
-    // Проверяем, не добавлена ли уже эта достопримечательность
-    if (points.find(p => p.target_type === 'attraction' && p.attractionData?.xid === attraction.xid)) return;
-    
-    setPoints([...points, { 
-      target_type: 'attraction', 
-      target_id: null, // Внешние достопримечательности не имеют ID в нашей БД
-      notes: '', 
-      name: attraction.name,
-      attractionData: attraction // Сохраняем данные достопримечательности
-    }]);
+  const [addingAttraction, setAddingAttraction] = useState(null); // xid загружаемой достопримечательности
+
+  const addAttractionAsPoint = async (attraction) => {
+    if (points.find(p => p.attractionData?.xid === attraction.xid)) return;
+
+    setAddingAttraction(attraction.xid);
+    try {
+      // Сохраняем внешнюю достопримечательность в БД и получаем её ID
+      const { data: place } = await api.post('/places/from-external', {
+        name:      attraction.name,
+        city:      form.city || null,
+        country:   form.country || null,
+        latitude:  attraction.lat || null,
+        longitude: attraction.lon || null,
+        category:  attraction.kinds?.split(',')[0] || null,
+      });
+
+      setPoints(prev => [...prev, {
+        target_type:    'place',
+        target_id:      place.id,
+        notes:          '',
+        name:           place.name,
+        attractionData: attraction, // для дедупликации в UI
+      }]);
+    } catch (err) {
+      console.error('Failed to save attraction:', err);
+    } finally {
+      setAddingAttraction(null);
+    }
+
     setSearch('');
     setShowDropdown(false);
   };
@@ -205,13 +224,13 @@ const handleSubmit = async (e) => {
   setSaving(true);
 
   try {
-    // Фильтруем точки: убираем привлечения (attraction) — они только для UI
+    // Все точки теперь имеют реальный target_id (attractions сохраняются в БД при добавлении)
     const validPoints = points
       .filter(p => p.target_id !== null && p.target_id !== undefined)
-      .map((p, index) => ({
+      .map((p) => ({
         target_type: p.target_type,
-        target_id: Number(p.target_id),
-        notes: p.notes || '',
+        target_id:   Number(p.target_id),
+        notes:       p.notes || '',
       }));
 
     const payload = {
@@ -331,7 +350,7 @@ const handleSubmit = async (e) => {
                             key={attraction.xid}
                             type="button" 
                             onClick={() => addAttractionAsPoint(attraction)}
-                            disabled={points.find(p => p.target_type === 'attraction' && p.attractionData?.xid === attraction.xid)}
+                            disabled={points.find(p => p.attractionData?.xid === attraction.xid) || addingAttraction === attraction.xid}
                             className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex justify-between items-center disabled:opacity-50 disabled:cursor-not-allowed"
                           >
                             <div className="flex-1 min-w-0">
@@ -342,7 +361,11 @@ const handleSubmit = async (e) => {
                               </div>
                             </div>
                             <span className="text-xs text-green-600 ml-2">
-                              {points.find(p => p.target_type === 'attraction' && p.attractionData?.xid === attraction.xid) ? t('routes.added') : t('routes.add')}
+                              {addingAttraction === attraction.xid
+                                ? '...'
+                                : points.find(p => p.attractionData?.xid === attraction.xid)
+                                  ? t('routes.added')
+                                  : t('routes.add')}
                             </span>
                           </button>
                         ))}
