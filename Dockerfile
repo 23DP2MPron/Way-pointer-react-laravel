@@ -28,6 +28,9 @@ RUN echo 'Listen 8080' > /etc/apache2/ports.conf
 
 RUN echo '<?php echo "PHP WORKS";' > /var/www/html/public/test.php
 
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+
 EXPOSE 8080
 
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "/var/www/html/public"]
+CMD ["/docker-entrypoint.sh"]

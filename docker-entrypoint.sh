@@ -1,9 +1,13 @@
-#!/bin/bash
+#!/bin/sh
 set -e
 
-# Create symbolic links for Laravel logs to stdout/stderr
-ln -sf /dev/stdout /var/www/html/storage/logs/laravel.log
-ln -sf /dev/stderr /var/www/html/storage/logs/laravel-error.log
+echo "Running migrations..."
+php artisan migrate --force
 
-# Start Apache
-exec apache2-foreground
+echo "Clearing caches..."
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+
+echo "Starting server..."
+exec php -S 0.0.0.0:8080 -t /var/www/html/public
